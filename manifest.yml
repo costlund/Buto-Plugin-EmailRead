@@ -1,10 +1,17 @@
-version: 1.0.0
+version: 1.1.0
 history:
+  1.1.0:
+    date: '2023-12-06'
+    title: 'Object to array'
+    description: 'Using new plugin object/to_array.'
   1.0.0:
     date: '2023-12-05'
     title: 'First version'
     description: 'First version. Manifest created.'
-plugin: {  }
+plugin:
+  -
+    name: object/to_array
+    version: 1.0.0
 sys:
   -
     name: mercury

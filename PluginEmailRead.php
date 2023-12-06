@@ -20,7 +20,7 @@ class PluginEmailRead{
     if($data->get('folder')){
       $data->set('mailbox', $data->get('mailbox').'.'.$data->get('folder'));
     }
-    $inbox = imap_open($data->get('mailbox'), $data->get('user'), $data->get('password')) or die('Cannot connect to Gmail: ' . imap_last_error());  
+    $inbox = imap_open($data->get('mailbox'), $data->get('user'), $data->get('password')) or die('Cannot connect to mail server due to: ' . imap_last_error());  
     $data->set('list', imap_list($inbox, '{'.$data->get('server').'}', '*'));
     $data->set('emails_count', 0);
     /**
@@ -44,7 +44,9 @@ class PluginEmailRead{
          * structure
          */
         $structure = imap_fetchstructure($inbox, $msgno);
-        $email->set('structure', $this->object_to_array($structure));
+        wfPlugin::includeonce('object/to_array');
+        $ObjectTo_array = new PluginObjectTo_array();
+        $email->set('structure', $ObjectTo_array->to_array($structure));
         /**
          * message
          */
@@ -102,16 +104,5 @@ class PluginEmailRead{
      * 
      */
     return $data;
-  }
-  private function object_to_array($obj) {
-    if(is_object($obj) || is_array($obj)) {
-      $ret = (array) $obj;
-      foreach($ret as &$item){
-        $item = $this->object_to_array($item);
-      }
-      return $ret;
-    }else{
-      return $obj;
-    }
   }
 }
