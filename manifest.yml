@@ -1,5 +1,9 @@
-version: 1.1.0
+version: 1.2.0
 history:
+  1.2.0:
+    date: '2023-12-06'
+    title: 'Header'
+    description: 'Add header data including email from, reply to.'
   1.1.0:
     date: '2023-12-06'
     title: 'Object to array'

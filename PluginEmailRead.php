@@ -9,6 +9,11 @@ class PluginEmailRead{
     /**
      * 
      */
+    wfPlugin::includeonce('object/to_array');
+    $ObjectTo_array = new PluginObjectTo_array();
+    /**
+     * 
+     */
     $data = new PluginWfArray();
     $data->set('server', $this->server);
     $data->set('port', $this->port);
@@ -41,11 +46,16 @@ class PluginEmailRead{
         $email->set('overview/subject', mb_decode_mimeheader($email->get('overview/subject')));
         $email->set('overview/from', mb_decode_mimeheader($email->get('overview/from')));
         /**
+         * header
+         */
+        $header = imap_headerinfo($inbox, $msgno);
+        $email->set('header', $ObjectTo_array->to_array($header));
+        $email->set('header/from_email', $email->get('header/from/0/mailbox').'@'.$email->get('header/from/0/host'));
+        $email->set('header/reply_to_email', $email->get('header/reply_to/0/mailbox').'@'.$email->get('header/reply_to/0/host'));
+        /**
          * structure
          */
         $structure = imap_fetchstructure($inbox, $msgno);
-        wfPlugin::includeonce('object/to_array');
-        $ObjectTo_array = new PluginObjectTo_array();
         $email->set('structure', $ObjectTo_array->to_array($structure));
         /**
          * message
