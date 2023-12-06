@@ -5,6 +5,24 @@ class PluginEmailRead{
   public $user = null;
   public $password = null;
   public $folder = null;  
+  public $files_folder = null;  
+  private $subtype = array();
+  private $filename = null;
+  function __construct(){
+    $this->subtype = array('PNG', 'JPEG', 'PDF', 'MP4', 'PLAIN');
+    $this->filename = new PluginWfArray();
+    $this->filename->set('value', null);
+    $this->filename->set('PNG/name', 'temp.png');
+    $this->filename->set('PNG/encoding', 3);
+    $this->filename->set('JPEG/name', 'temp.jpg');
+    $this->filename->set('JPEG/encoding', 3);
+    $this->filename->set('PDF/name', 'temp.pdf');
+    $this->filename->set('PDF/encoding', 3);
+    $this->filename->set('MP4/name', 'temp.mp4');
+    $this->filename->set('MP4/encoding', 3);
+    $this->filename->set('PLAIN/name', 'temp.txt');
+    $this->filename->set('PLAIN/encoding', 4);
+  }
   public function get_messages(){
     /**
      * 
@@ -20,7 +38,7 @@ class PluginEmailRead{
     $data->set('user', $this->user);
     $data->set('password', $this->password);
     $data->set('folder', $this->folder);
-    $data->set('files_folder', __DIR__.'/temp');
+    $data->set('files_folder', $this->files_folder);
     $data->set('mailbox', '{'.$data->get('server').':'.$data->get('port').'}INBOX');
     if($data->get('folder')){
       $data->set('mailbox', $data->get('mailbox').'.'.$data->get('folder'));
@@ -76,20 +94,19 @@ class PluginEmailRead{
         if($email->get('structure/parts')){
           foreach($email->get('structure/parts') as $k => $v){
             $part = new PluginWfArray($v);
+            if(in_array($part->get('subtype'), $this->subtype)){
+              $file = $this->get_file($inbox, $msgno, $part, ((string)$k+1), $email->get('overview/uid'), $data);
+              if($file){
+                $email->set('files/', $file);
+              }
+            }
             if($part->get('parts')){
               foreach($part->get('parts') as $k2 => $v2){
                 $part2 = new PluginWfArray($v2);
-                if($part2->get('subtype')=='PNG'){
-                  $filename = 'temp.png';
-                  if($part2->get('dparameters/0/attribute')=='filename'){
-                    $filename = $part2->get('dparameters/0/value');
-                  }
-                  $fetchbody = imap_fetchbody($inbox, $msgno, ((string)$k+1).'.'.((string)$k2+1) );
-                  $fetchbody = base64_decode($fetchbody);
-                  $email->set('files/', array('filename' => $filename, 'fetchbody' => $fetchbody));
-                  if(false){
-                    wfFilesystem::createDir($data->get('files_folder').'/'.$email->get('overview/uid'));
-                    wfFilesystem::saveFile($data->get('files_folder').'/'.$email->get('overview/uid').'/'.$filename, $fetchbody);
+                if(in_array($part2->get('subtype'), $this->subtype)){
+                  $file = $this->get_file($inbox, $msgno, $part2, ((string)$k+1).'.'.((string)$k2+1), $email->get('overview/uid'), $data);
+                  if($file){
+                    $email->set('files/', $file);
                   }
                 }
               }
@@ -114,5 +131,55 @@ class PluginEmailRead{
      * 
      */
     return $data;
+  }
+  private function get_file($inbox, $msgno, $part, $section, $uid, $data){
+    /**
+     * filename
+     */
+    $this->filename->set('value', $this->filename->get($part->get('subtype').'/name'));
+    if($part->get('dparameters/0/attribute')=='filename'){
+      $this->filename->set('value', $part->get('dparameters/0/value'));
+    }elseif($part->get('dparameters/1/attribute')=='filename'){
+      $this->filename->set('value', $part->get('dparameters/1/value'));
+    }
+    /**
+     * fetchbody
+     */
+    $fetchbody = imap_fetchbody($inbox, $msgno, $section );
+    /**
+     * is_file
+     */
+    $is_file = false;
+    if($part->get('encoding')==3 || $part->get('encoding')==4){
+      $is_file = true;
+    }
+    /**
+     *
+     */
+    if($is_file){
+      /**
+       * decode
+       */
+      if($this->filename->get($part->get('subtype').'/encoding')==3){
+        $fetchbody = base64_decode($fetchbody);
+      }elseif($this->filename->get($part->get('subtype').'/encoding')==4){
+        $fetchbody = quoted_printable_decode($fetchbody);
+      }
+      /**
+       * save
+       */
+      if($data->get('files_folder')){
+        wfFilesystem::createDir($data->get('files_folder').'/'.$uid);
+        wfFilesystem::saveFile($data->get('files_folder').'/'.$uid.'/'.$this->filename->get('value'), $fetchbody);
+      }
+    }
+    /**
+     * 
+     */
+    if($is_file){
+      return array('filename' => $this->filename->get('value'), 'fetchbody' => 'fetchbody...');
+    }else{
+      return false;
+    }
   }
 }
