@@ -46,6 +46,7 @@ class PluginEmailRead{
     $inbox = imap_open($data->get('mailbox'), $data->get('user'), $data->get('password')) or die('Cannot connect to mail server due to: ' . imap_last_error());  
     $data->set('list', imap_list($inbox, '{'.$data->get('server').'}', '*'));
     $data->set('emails_count', 0);
+    $data->set('emails', array());
     /**
      * emails
      */
